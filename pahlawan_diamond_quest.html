@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pahlawan Nusantara - Diamond Quest</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:Arial,Helvetica,sans-serif;background:#101827;color:#fff;overflow:hidden}
+button,input{font:inherit}
+.screen{display:none;width:100%;height:100%}.screen.active{display:flex}
+#startScreen{align-items:center;justify-content:center;background:
+ radial-gradient(circle at 20% 20%,#355c7d 0 12%,transparent 13%),
+ linear-gradient(135deg,#16213e,#0f3460 55%,#1b5e55)}
+.start-card{width:min(720px,92vw);padding:34px 28px;text-align:center;background:#202a3d;border:5px solid #111827;border-radius:22px;box-shadow:0 12px 0 #0b1020,0 20px 50px #0008}
+.logo{font-size:clamp(42px,8vw,78px);margin-bottom:4px;filter:drop-shadow(5px 7px 0 #111)}
+.start-card h1{font-size:clamp(26px,5vw,46px);margin:0 0 8px;color:#facc15;text-shadow:3px 3px #111}
+.start-card p{margin:8px 0 22px;color:#dbeafe;font-size:18px;line-height:1.45}
+.name-input{width:min(480px,100%);padding:16px 18px;border:4px solid #111827;border-radius:12px;outline:none;background:#f8fafc;color:#111827;font-weight:800;font-size:18px}
+.game-btn{margin-top:16px;padding:15px 28px;border:4px solid #111827;border-radius:12px;background:#22c55e;color:#fff;font-weight:900;font-size:20px;cursor:pointer;box-shadow:0 7px 0 #166534;transition:.12s;touch-action:manipulation}
+.game-btn:active{transform:translateY(5px);box-shadow:0 2px 0 #166534}
+.hint{margin-top:18px!important;font-size:14px!important;color:#bfdbfe!important}
+
+#gameScreen{position:relative;background:#6bbf59;overflow:hidden}
+#gameCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:auto}
+.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:10px;pointer-events:none;z-index:5}
+.hud-box{background:#1f2937eF;border:3px solid #111827;border-radius:12px;padding:9px 13px;box-shadow:0 5px 0 #111827;font-weight:900}
+.hud-title{color:#facc15;font-size:14px}.hud-value{font-size:18px}
+.progress-wrap{position:absolute;top:78px;left:50%;transform:translateX(-50%);width:min(460px,72vw);height:18px;background:#111827;border:3px solid #0b1020;border-radius:20px;z-index:5;overflow:hidden}
+.progress{height:100%;width:0;background:#facc15;transition:width .3s}
+.center-message{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;text-align:center;pointer-events:none;display:none}
+.center-message.show{display:block;animation:pop .65s ease}
+.cheers{font-size:clamp(55px,13vw,110px);font-weight:1000;color:#facc15;text-shadow:6px 6px #111,-2px -2px #fff;white-space:nowrap}
+.subcheer{font-size:22px;font-weight:900;background:#22c55e;border:4px solid #111;padding:8px 16px;border-radius:12px;box-shadow:0 5px #111}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}60%{transform:translate(-50%,-50%) scale(1.12);opacity:1}100%{transform:translate(-50%,-50%) scale(1)}}
+
+#questionModal{position:absolute;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:20;padding:18px}
+#questionModal.show{display:flex}
+.question-card{width:min(720px,94vw);max-height:92vh;overflow:auto;background:#f8fafc;color:#111827;border:5px solid #111827;border-radius:20px;box-shadow:0 12px 0 #0b1020;padding:22px}
+.q-top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
+.q-badge{background:#facc15;border:3px solid #111827;padding:7px 12px;border-radius:9px;font-weight:1000}
+.q-diamond{font-size:28px}
+.question-text{font-size:clamp(20px,4vw,28px);line-height:1.35;font-weight:900;margin:12px 0 18px}
+.options{display:grid;gap:12px}
+.option{padding:15px 16px;text-align:left;border:4px solid #111827;border-radius:12px;background:#dbeafe;color:#111827;font-weight:900;cursor:pointer;box-shadow:0 5px #64748b;touch-action:manipulation}
+.option:hover{filter:brightness(1.04)}.option:active{transform:translateY(3px);box-shadow:0 2px #64748b}
+.option.correct{background:#86efac}.option.wrong{background:#fca5a5}.option:disabled{cursor:default}
+.feedback{margin-top:16px;padding:13px;border-radius:12px;border:3px solid #111827;display:none;font-weight:800;line-height:1.4}
+.feedback.show{display:block}.feedback.good{background:#bbf7d0}.feedback.bad{background:#fecaca}
+.next-btn{display:none;width:100%;margin-top:12px;padding:13px;border:4px solid #111827;border-radius:11px;background:#facc15;color:#111;font-weight:1000;box-shadow:0 5px #111;cursor:pointer}
+.next-btn.show{display:block}
+
+#resultScreen{align-items:center;justify-content:center;background:linear-gradient(135deg,#101827,#19324d)}
+.result-card{width:min(680px,92vw);text-align:center;background:#202a3d;border:5px solid #111827;border-radius:22px;padding:30px;box-shadow:0 12px #0b1020}
+.trophy{font-size:82px}.result-card h2{color:#facc15;font-size:38px;margin:5px}.score-big{font-size:64px;font-weight:1000;color:#fff;margin:12px}.result-card p{color:#dbeafe;font-size:18px}
+.result-card .game-btn{background:#3b82f6;box-shadow:0 7px #1e3a8a}
+
+#controls{position:absolute;left:18px;bottom:18px;z-index:8;display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px;gap:7px;opacity:.9}
+.ctrl{border:3px solid #111827;border-radius:12px;background:#e5e7ebdd;color:#111;font-size:24px;font-weight:1000;box-shadow:0 4px #111827;touch-action:none}
+.ctrl:active{transform:translateY(3px);box-shadow:0 1px #111827}
+.up{grid-column:2}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}
+#interaction{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:8;background:#111827eF;border:3px solid #facc15;border-radius:12px;padding:10px 16px;font-weight:1000;display:none;text-align:center}
+#interaction.show{display:block}
+@media(min-width:800px){#controls{display:none}}
+@media(max-width:600px){.hud{top:8px;left:8px;right:8px}.hud-box{padding:7px 9px}.progress-wrap{top:66px}.start-card{padding:26px 18px}.start-card p{font-size:16px}}
+</style>
+</head>
+<body>
+
+<section id="startScreen" class="screen active">
+  <div class="start-card">
+    <div class="logo">💎⚔️</div>
+    <h1>PAHLAWAN NUSANTARA</h1>
+    <p><b>DIAMOND QUEST</b><br>Jelajah dunia, cari diamond dan buktikan ilmu Sejarah Tahun 5!</p>
+    <input id="studentName" class="name-input" maxlength="40" placeholder="Masukkan nama murid">
+    <br>
+    <button class="game-btn" onclick="startGame()">🎮 MULA PERMAINAN</button>
+    <p class="hint">Komputer: WASD / anak panah &nbsp; • &nbsp; Telefon: butang kawalan</p>
+  </div>
+</section>
+
+<section id="gameScreen" class="screen">
+  <canvas id="gameCanvas"></canvas>
+  <div class="hud">
+    <div class="hud-box"><div class="hud-title">🧑‍🎓 PEMAIN</div><div id="playerName" class="hud-value">-</div></div>
+    <div class="hud-box"><div class="hud-title">💎 DIAMOND</div><div id="diamondCount" class="hud-value">0 / 25</div></div>
+    <div class="hud-box"><div class="hud-title">⭐ SKOR</div><div id="score" class="hud-value">0</div></div>
+  </div>
+  <div class="progress-wrap"><div id="progress" class="progress"></div></div>
+  <div id="interaction">💎 Hampiri diamond dan tekan <b>SPACE / TAP</b></div>
+  <div id="centerMessage" class="center-message">
+    <div class="cheers">🎉 CHEERS! 🎉</div>
+    <div class="subcheer">Diamond berjaya dikumpul!</div>
+  </div>
+  <div id="controls">
+    <button class="ctrl up" data-key="ArrowUp">▲</button>
+    <button class="ctrl left" data-key="ArrowLeft">◀</button>
+    <button class="ctrl down" data-key="ArrowDown">▼</button>
+    <button class="ctrl right" data-key="ArrowRight">▶</button>
+  </div>
+
+  <div id="questionModal">
+    <div class="question-card">
+      <div class="q-top">
+        <div id="qBadge" class="q-badge">DIAMOND 1 / 25</div>
+        <div class="q-diamond">💎</div>
+      </div>
+      <div id="questionText" class="question-text"></div>
+      <div id="options" class="options"></div>
+      <div id="feedback" class="feedback"></div>
+      <button id="nextBtn" class="next-btn" onclick="nextQuestion()">➡️ SAMBUNG JELAJAH</button>
+    </div>
+  </div>
+</section>
+
+<section id="resultScreen" class="screen">
+  <div class="result-card">
+    <div class="trophy">🏆</div>
+    <h2>MISI SELESAI!</h2>
+    <div id="resultName"></div>
+    <div id="resultScore" class="score-big">0 / 25</div>
+    <p id="resultMessage"></p>
+    <button class="game-btn" onclick="location.reload()">🔄 MAIN SEMULA</button>
+  </div>
+</section>
+
+<script>
+const questionBank = [
+  {
+    question:"Siapakah tokoh yang merupakan Penghulu Naning dan menentang British di Naning?",
+    options:["Dol Said","Tok Janggut","Dato' Bahaman"],
+    answer:0,
+    explanation:"Dol Said ialah Penghulu Naning yang menentang British di Naning, Melaka."
+  },
+  {
+    question:"Apakah sebab utama Dol Said menentang British?",
+    options:["Enggan membayar cukai hasil kepada British","British menguasai Sarikei","SBUB menjadikan orang Murut buruh paksa"],
+    answer:0,
+    explanation:"Dol Said menentang British kerana enggan membayar cukai hasil yang dikenakan oleh British."
+  },
+  {
+    question:"Siapakah pahlawan Iban yang menentang pemerintahan James Brooke di Sarawak?",
+    options:["Rentap","Antanom","Mat Salleh"],
+    answer:0,
+    explanation:"Rentap ialah pahlawan Iban yang menentang pemerintahan keluarga Brooke di Sarawak."
+  },
+  {
+    question:"Apakah antara sebab Rentap menentang James Brooke?",
+    options:["James Brooke cuba menghapuskan penempatan orang Iban","British memperkenalkan cukai di Naning","British mengambil alih pentadbiran Perak"],
+    answer:0,
+    explanation:"James Brooke cuba menghapuskan penempatan orang Iban di kawasan Nanga Skrang."
+  },
+  {
+    question:"Sharif Masahor merupakan pembesar di kawasan ________.",
+    options:["Sarikei","Naning","Pasir Puteh"],
+    answer:0,
+    explanation:"Sharif Masahor merupakan pembesar Sarikei di Sarawak."
+  },
+  {
+    question:"Mengapakah Sharif Masahor menentang James Brooke?",
+    options:["Beliau kehilangan hak dan kuasa sebagai pembesar","Beliau enggan membayar cukai di Naning","Beliau tidak bersetuju dengan buruh paksa"],
+    answer:0,
+    explanation:"Penguasaan James Brooke menyebabkan Sharif Masahor kehilangan hak dan kuasa sebagai pembesar di Sarikei."
+  },
+  {
+    question:"Siapakah tokoh yang mentadbir kawasan Pasir Salak di Perak?",
+    options:["Dato' Maharaja Lela","Yamtuan Antah","Haji Abdul Rahman Limbong"],
+    answer:0,
+    explanation:"Dato' Maharaja Lela ialah Orang Besar Berlapan Perak yang mentadbir kawasan Pasir Salak."
+  },
+  {
+    question:"Apakah antara sebab Dato' Maharaja Lela menentang British?",
+    options:["J.W.W. Birch campur tangan dalam pentadbiran dan adat resam","James Brooke menguasai Sarikei","SBUB menjadikan orang Murut buruh paksa"],
+    answer:0,
+    explanation:"J.W.W. Birch campur tangan dalam pentadbiran negeri serta adat resam masyarakat Melayu dan mengambil alih kuasa Sultan dan pembesar."
+  },
+  {
+    question:"Siapakah yang bersetuju mengambil tanggungjawab untuk membunuh J.W.W. Birch?",
+    options:["Dato' Maharaja Lela","Rentap","Mat Salleh"],
+    answer:0,
+    explanation:"Dato' Maharaja Lela bersetuju mengambil tanggungjawab untuk membunuh Residen British J.W.W. Birch."
+  },
+  {
+    question:"Siapakah tokoh yang menentang campur tangan British di Negeri Sembilan?",
+    options:["Yamtuan Antah","Dato' Bahaman","Dol Said"],
+    answer:0,
+    explanation:"Yamtuan Antah merupakan tokoh yang menentang campur tangan British di Negeri Sembilan."
+  },
+  {
+    question:"Antara kawasan berikut, yang manakah berkaitan dengan penentangan Yamtuan Antah?",
+    options:["Paroi dan Bukit Putus","Pasir Puteh dan Jeram","Nanga Skrang dan Kanowit"],
+    answer:0,
+    explanation:"Penentangan Yamtuan Antah berlaku di Negeri Sembilan, termasuk kawasan Paroi dan Bukit Putus."
+  },
+  {
+    question:"Siapakah tokoh yang mengetuai penentangan terhadap British di Pahang?",
+    options:["Dato' Bahaman","Sharif Masahor","Tok Janggut"],
+    answer:0,
+    explanation:"Dato' Bahaman ialah salah seorang tokoh utama yang menentang campur tangan British di Pahang."
+  },
+  {
+    question:"Apakah kawasan yang berjaya ditawan oleh Dato' Bahaman pada tahun 1891?",
+    options:["Lubuk Terua","Pasir Salak","Tambunan"],
+    answer:0,
+    explanation:"Pada tahun 1891, Dato' Bahaman berjaya menawan Lubuk Terua."
+  },
+  {
+    question:"Pada tahun 1894, Dato' Bahaman menguasai Kuala Tembeling dan ________.",
+    options:["Jeram Ampai","Pasir Puteh","Sarikei"],
+    answer:0,
+    explanation:"Pada tahun 1894, Dato' Bahaman menguasai Kuala Tembeling dan Jeram Ampai."
+  },
+  {
+    question:"Siapakah tokoh yang menentang British di Terengganu?",
+    options:["Haji Abdul Rahman Limbong","Yamtuan Antah","Dato' Maharaja Lela"],
+    answer:0,
+    explanation:"Haji Abdul Rahman Limbong ialah tokoh yang menentang campur tangan British di Terengganu."
+  },
+  {
+    question:"Apakah antara sebab Haji Abdul Rahman Limbong menentang British?",
+    options:["Peraturan tanah dan cukai baharu menyusahkan penduduk","James Brooke menguasai Sarikei","British cuba menghapuskan penempatan Iban"],
+    answer:0,
+    explanation:"Peraturan tanah dan cukai baharu British menimbulkan kesulitan kepada penduduk tempatan di Terengganu."
+  },
+  {
+    question:"Apakah yang berlaku kepada Haji Abdul Rahman Limbong selepas penentangannya?",
+    options:["Dibuang negeri ke Mekah","Dilantik menjadi Residen","Diberikan jawatan sebagai pembesar British"],
+    answer:0,
+    explanation:"Haji Abdul Rahman Limbong ditangkap dan kemudiannya dibuang negeri ke Mekah."
+  },
+  {
+    question:"Siapakah tokoh yang menentang Syarikat Borneo Utara British (SBUB) di Borneo Utara?",
+    options:["Mat Salleh","Rentap","Dol Said"],
+    answer:0,
+    explanation:"Mat Salleh merupakan tokoh yang menentang SBUB di Borneo Utara."
+  },
+  {
+    question:"Selepas kubunya di Ranau dimusnahkan oleh SBUB, Mat Salleh mendirikan kubu yang lebih kukuh di ________.",
+    options:["Tambunan","Lubuk Terua","Sarikei"],
+    answer:0,
+    explanation:"Mat Salleh mendirikan kubu yang lebih kukuh di Tambunan selepas kubunya di Ranau dimusnahkan oleh SBUB."
+  },
+  {
+    question:"Apakah antara sebab Antanom menentang SBUB?",
+    options:["SBUB menjadikan kaum Murut sebagai buruh paksa","British mengambil alih kuasa Sultan Perak","James Brooke menguasai Sarikei"],
+    answer:0,
+    explanation:"Antanom menentang SBUB kerana antaranya SBUB menjadikan kaum Murut sebagai buruh paksa."
+  },
+  {
+    question:"Antanom ialah tokoh yang memimpin kaum ________ menentang SBUB.",
+    options:["Murut","Iban","Melayu Naning"],
+    answer:0,
+    explanation:"Antanom ialah pemimpin kaum Murut di Borneo Utara yang menentang SBUB."
+  },
+  {
+    question:"Siapakah tokoh yang menentang British di Pasir Puteh, Kelantan?",
+    options:["Tok Janggut","Dato' Bahaman","Haji Abdul Rahman Limbong"],
+    answer:0,
+    explanation:"Tok Janggut memimpin penentangan terhadap British di Pasir Puteh, Kelantan."
+  },
+  {
+    question:"Apakah antara sebab Tok Janggut menentang British?",
+    options:["Tidak bersetuju dengan sistem cukai dan peraturan baharu","James Brooke menguasai Sarikei","SBUB menjadikan orang Murut buruh paksa"],
+    answer:0,
+    explanation:"Tok Janggut tidak bersetuju dengan pengenalan peraturan dan cukai baharu British yang membebankan penduduk."
+  },
+  {
+    question:"Di manakah Tok Janggut memimpin penentangan terhadap British?",
+    options:["Pasir Puteh","Pasir Salak","Lubuk Terua"],
+    answer:0,
+    explanation:"Tok Janggut memimpin penentangan terhadap British di Pasir Puteh, Kelantan."
+  },
+  {
+    question:"Tok Janggut menentang British kerana penduduk tempatan dibebankan dengan ________.",
+    options:["cukai dan peraturan baharu","buruh paksa di lombong","penghapusan penempatan Iban"],
+    answer:0,
+    explanation:"Pengenalan cukai dan peraturan baharu British menimbulkan bantahan penduduk tempatan."
+  }
+];
+const TOTAL=25;
+let questions=[],current=0,score=0,studentName="",answered=false;
+let canvas,ctx,W,H,last=0,raf;
+const keys={};
+const player={x:420,y:360,size:30,speed:230};
+let camera={x:0,y:0};
+let diamond={x:780,y:420,active:true};
+let world={w:2600,h:1800};
+let collected=0;
+let audioCtx=null,musicTimer=null;
+
+const npcs=[
+ {x:310,y:270,emoji:"🧔",name:"Dol Said"}, {x:1080,y:280,emoji:"🪓",name:"Rentap"},
+ {x:1740,y:300,emoji:"⚔️",name:"Sharif Masahor"}, {x:2200,y:520,emoji:"👳",name:"Dato' Maharaja Lela"},
+ {x:430,y:1200,emoji:"👑",name:"Yamtuan Antah"}, {x:1130,y:1030,emoji:"🗡️",name:"Dato' Bahaman"},
+ {x:1780,y:1120,emoji:"📜",name:"Haji Abdul Rahman Limbong"}, {x:2250,y:1180,emoji:"🏹",name:"Mat Salleh"},
+ {x:760,y:1530,emoji:"🛡️",name:"Antanom"}, {x:1500,y:1500,emoji:"⚔️",name:"Tok Janggut"}
+];
+const trees=[];
+for(let i=0;i<90;i++){
+  trees.push({x:70+((i*293)%2450),y:90+((i*197)%1620),s:0.7+((i*37)%70)/100});
+}
+const rocks=[];
+for(let i=0;i<38;i++){
+  rocks.push({x:100+((i*431)%2350),y:130+((i*271)%1500),s:0.7+((i*17)%60)/100});
+}
+const obstacles=[
+ {x:0,y:0,w:2600,h:55},{x:0,y:1745,w:2600,h:55},{x:0,y:0,w:55,h:1800},{x:2545,y:0,w:55,h:1800},
+ {x:620,y:170,w:330,h:70},{x:1330,y:650,w:390,h:70},{x:190,y:760,w:300,h:70},
+ {x:850,y:1290,w:350,h:70},{x:1810,y:1430,w:380,h:70}
+];
+
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active")}
+
+function startGame(){
+  studentName=document.getElementById("studentName").value.trim();
+  if(!studentName){alert("Sila masukkan nama murid terlebih dahulu.");return}
+  questions=shuffle(questionBank).slice(0,TOTAL);
+  current=0;score=0;collected=0;
+  document.getElementById("playerName").textContent=studentName;
+  updateHud();showScreen("gameScreen");initGame();startMusic();
+}
+
+function initGame(){
+  canvas=document.getElementById("gameCanvas");ctx=canvas.getContext("2d");
+  resize();window.addEventListener("resize",resize);
+  player.x=420;player.y=360;placeDiamond();last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+}
+function resize(){W=canvas.width=window.innerWidth*devicePixelRatio;H=canvas.height=window.innerHeight*devicePixelRatio;canvas.style.width=innerWidth+"px";canvas.style.height=innerHeight+"px";ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);W=innerWidth;H=innerHeight}
+function placeDiamond(){
+  const spots=[
+    [780,420],[1160,520],[1550,400],[2050,650],[2380,900],
+    [580,900],[920,1060],[1370,940],[1730,850],[2170,1040],
+    [360,1350],[720,1280],[1080,1480],[1450,1260],[1870,1220],
+    [2290,1450],[450,560],[1280,300],[1880,500],[2400,350],
+    [620,1540],[1200,820],[1600,1450],[2050,1320],[2380,1600]
+  ];
+  const p=spots[Math.min(collected,spots.length-1)];
+  diamond={x:p[0],y:p[1],active:true};
+}
+function loop(t){
+  const dt=Math.min(.035,(t-last)/1000);last=t;
+  update(dt);draw();raf=requestAnimationFrame(loop);
+}
+function update(dt){
+  if(document.getElementById("questionModal").classList.contains("show"))return;
+  let dx=0,dy=0;
+  if(keys.ArrowLeft||keys.a)dx--;if(keys.ArrowRight||keys.d)dx++;
+  if(keys.ArrowUp||keys.w)dy--;if(keys.ArrowDown||keys.s)dy++;
+  if(dx||dy){const len=Math.hypot(dx,dy);dx/=len;dy/=len;movePlayer(dx*player.speed*dt,dy*player.speed*dt)}
+  camera.x=Math.max(0,Math.min(world.w-W,player.x-W/2));
+  camera.y=Math.max(0,Math.min(world.h-H,player.y-H/2));
+  const dist=Math.hypot(player.x-diamond.x,player.y-diamond.y);
+  const inter=document.getElementById("interaction");
+  if(diamond.active&&dist<80){inter.classList.add("show");inter.innerHTML="💎 Hampiri diamond dan tekan <b>SPACE / TAP</b>";}
+  else inter.classList.remove("show");
+}
+function movePlayer(dx,dy){
+  const nx=Math.max(75,Math.min(world.w-75,player.x+dx));
+  const ny=Math.max(75,Math.min(world.h-75,player.y+dy));
+  if(!collides(nx,player.y))player.x=nx;
+  if(!collides(player.x,ny))player.y=ny;
+}
+function collides(x,y){
+  for(const o of obstacles)if(x>o.x-22&&x<o.x+o.w+22&&y>o.y-22&&y<o.y+o.h+22)return true;
+  return false;
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();ctx.translate(-camera.x,-camera.y);
+  drawWorld();drawObjects();drawDiamond();drawPlayer();
+  ctx.restore();
+}
+function drawWorld(){
+  ctx.fillStyle="#68b957";ctx.fillRect(0,0,world.w,world.h);
+  // grid / blocky terrain
+  ctx.globalAlpha=.13;ctx.strokeStyle="#1d5f36";ctx.lineWidth=1;
+  for(let x=0;x<world.w;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,world.h);ctx.stroke()}
+  for(let y=0;y<world.h;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(world.w,y);ctx.stroke()}
+  ctx.globalAlpha=1;
+  // paths
+  ctx.fillStyle="#c9a86a";ctx.fillRect(55,330,2490,95);ctx.fillRect(500,55,95,1690);ctx.fillRect(1470,55,95,1690);
+  // water
+  ctx.fillStyle="#3fa9e0";ctx.fillRect(55,55,2490,70);ctx.fillRect(55,1610,2490,135);
+  // platforms / buildings
+  for(const o of obstacles.slice(4)){
+    ctx.fillStyle="#8b5e34";ctx.fillRect(o.x,o.y,o.w,o.h);
+    ctx.fillStyle="#a87946";ctx.fillRect(o.x,o.y,o.w,12);
+    ctx.strokeStyle="#51351f";ctx.lineWidth=3;ctx.strokeRect(o.x,o.y,o.w,o.h);
+  }
+  // sign
+  ctx.fillStyle="#6b4425";ctx.fillRect(85,155,300,100);ctx.fillStyle="#facc15";ctx.font="900 24px Arial";ctx.textAlign="center";ctx.fillText("DIAMOND QUEST",235,195);ctx.font="900 16px Arial";ctx.fillText("Cari 25 diamond!",235,223);
+}
+function drawObjects(){
+  for(const t of trees){
+    const x=t.x,y=t.y,s=t.s;ctx.font=`${48*s}px Arial`;ctx.textAlign="center";ctx.fillText("🌳",x,y);
+  }
+  for(const r of rocks){ctx.font=`${34*r.s}px Arial`;ctx.textAlign="center";ctx.fillText("🪨",r.x,r.y)}
+  for(const n of npcs){
+    ctx.font="42px Arial";ctx.textAlign="center";ctx.fillText(n.emoji,n.x,n.y);
+    ctx.fillStyle="#111827dd";ctx.fillRect(n.x-55,n.y+10,110,23);ctx.fillStyle="#fff";ctx.font="700 12px Arial";ctx.fillText(n.name,n.x,n.y+27);
+  }
+}
+function drawDiamond(){
+  if(!diamond.active)return;
+  const pulse=1+Math.sin(performance.now()/180)*.12;
+  ctx.save();ctx.translate(diamond.x,diamond.y);ctx.scale(pulse,pulse);
+  ctx.font="56px Arial";ctx.textAlign="center";ctx.fillText("💎",0,0);
+  ctx.fillStyle="#fff";ctx.font="900 14px Arial";ctx.fillText("SOALAN "+(collected+1),0,38);ctx.restore();
+}
+function drawPlayer(){
+  ctx.save();ctx.translate(player.x,player.y);
+  ctx.fillStyle="#11182766";ctx.beginPath();ctx.ellipse(0,25,25,9,0,0,Math.PI*2);ctx.fill();
+  ctx.font="40px Arial";ctx.textAlign="center";ctx.fillText("🧑‍🎓",0,8);
+  ctx.fillStyle="#facc15";ctx.font="900 12px Arial";ctx.fillText(studentName,0,-26);ctx.restore();
+}
+
+function openQuestion(){
+  if(!diamond.active||Math.hypot(player.x-diamond.x,player.y-diamond.y)>=95)return;
+  document.getElementById("questionModal").classList.add("show");
+  answered=false;
+  document.getElementById("qBadge").textContent=`DIAMOND ${collected+1} / ${TOTAL}`;
+  document.getElementById("questionText").textContent=questions[current].question;
+  const box=document.getElementById("options");box.innerHTML="";
+  document.getElementById("feedback").className="feedback";
+  document.getElementById("feedback").textContent="";
+  document.getElementById("nextBtn").className="next-btn";
+  questions[current].options.forEach((opt,i)=>{
+    const b=document.createElement("button");b.className="option";b.textContent=`${String.fromCharCode(65+i)}. ${opt}`;
+    b.onclick=()=>checkAnswer(i,b);box.appendChild(b);
+  });
+}
+function checkAnswer(i,button){
+  if(answered)return;answered=true;
+  const q=questions[current],opts=[...document.querySelectorAll(".option")];
+  opts.forEach((b,n)=>{b.disabled=true;if(n===q.answer)b.classList.add("correct")});
+  const fb=document.getElementById("feedback");
+  if(i===q.answer){
+    score++;fb.className="feedback show good";fb.innerHTML="🎉 <b>BETUL! CHEERS!</b><br>"+q.explanation;
+    showCheers();
+  }else{
+    button.classList.add("wrong");fb.className="feedback show bad";fb.innerHTML="❌ <b>Belum tepat.</b><br>Jawapan betul: <b>"+q.options[q.answer]+"</b><br>"+q.explanation;
+  }
+  document.getElementById("nextBtn").className="next-btn show";updateHud();
+}
+function showCheers(){
+  const el=document.getElementById("centerMessage");el.classList.remove("show");void el.offsetWidth;el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"),1250);
+}
+function nextQuestion(){
+  current++;collected++;
+  document.getElementById("questionModal").classList.remove("show");
+  if(collected>=TOTAL){showResult();return}
+  placeDiamond();updateHud();
+}
+function updateHud(){
+  document.getElementById("diamondCount").textContent=`${collected} / ${TOTAL}`;
+  document.getElementById("score").textContent=score;
+  document.getElementById("progress").style.width=(collected/TOTAL*100)+"%";
+}
+function showResult(){
+  cancelAnimationFrame(raf);stopMusic();showScreen("resultScreen");
+  document.getElementById("resultName").innerHTML=`<p><b>${escapeHtml(studentName)}</b>, misi jelajah kamu selesai!</p>`;
+  document.getElementById("resultScore").textContent=`${score} / ${TOTAL}`;
+  const pct=score/TOTAL*100;
+  document.getElementById("resultMessage").textContent=
+    pct===100?"🏆 LEGEND! Semua diamond berjaya dikumpul dengan sempurna!":
+    pct>=80?"🌟 HEBAT! Kamu sudah menguasai banyak fakta tentang pahlawan.":
+    pct>=60?"⚔️ BAGUS! Teruskan menjelajah dan ulang kaji fakta pahlawan.":
+    "🧭 TERUSKAN MISI! Cuba lagi untuk kumpul lebih banyak diamond.";
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+window.addEventListener("keydown",e=>{
+  if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," ","w","a","s","d","W","A","S","D"].includes(e.key))e.preventDefault();
+  keys[e.key]=true;
+  if(e.key===" "&&!document.getElementById("questionModal").classList.contains("show"))openQuestion();
+});
+window.addEventListener("keyup",e=>keys[e.key]=false);
+document.querySelectorAll(".ctrl").forEach(b=>{
+  const k=b.dataset.key;
+  const on=e=>{e.preventDefault();keys[k]=true;if(k==="ArrowUp"||k==="ArrowDown"||k==="ArrowLeft"||k==="ArrowRight"){}};
+  const off=e=>{e.preventDefault();keys[k]=false};
+  b.addEventListener("pointerdown",on);b.addEventListener("pointerup",off);b.addEventListener("pointercancel",off);b.addEventListener("pointerleave",off);
+});
+document.getElementById("gameCanvas").addEventListener("pointerdown",()=>{
+  if(!document.getElementById("questionModal").classList.contains("show"))openQuestion();
+});
+
+// Simple built-in game music. Starts from the user's MULA PERMAINAN click; no music button.
+function startMusic(){
+  try{
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended")audioCtx.resume();
+    const notes=[261.63,329.63,392,523.25,392,329.63,293.66,349.23];
+    let i=0;
+    const play=()=>{
+      if(!audioCtx)return;
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+      o.type="square";o.frequency.value=notes[i++%notes.length];
+      g.gain.setValueAtTime(.0001,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.035,audioCtx.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+.18);
+      o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.2);
+    };
+    play();musicTimer=setInterval(play,240);
+  }catch(e){}
+}
+function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null}if(audioCtx){audioCtx.close();audioCtx=null}}
+</script>
+</body>
+</html>
